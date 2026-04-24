@@ -2,11 +2,12 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+
 from db_util import get_db_connection
 
-from scraping_utils import fetch_html
-from scraping_utils import extract_rfp_links
+from scraping_utils import fetch_html, extract_rfp_links
 
+from pdf_utils import extract_pdf_text, download_pdf
 
 def main(db_connection, job_id: str = None):
     ## Get the list of RFP pages from the spreadsheet
@@ -36,13 +37,24 @@ def main(db_connection, job_id: str = None):
                 print(f"Failed to fetch the HTML of the RFP page for {tribe['Tribe']}")
             
             ## Extract the RFP links from the page (assumes the page has a list of links to RFPs)
-            rfp_links = extract_rfp_links(html, tribe["rfp_url"])
+            rfp_links = extract_rfp_links(html, tribe["rfp_url"], session)
             for rfp_link in rfp_links:
                 print(rfp_link["title"], rfp_link["url"], rfp_link["type"])
             if len(rfp_links) == 0:
                 print(f"No Candidate RFP links found for tribe {tribe['Tribe']}")
                 continue
 
+            ## Extract the text from the RFP if it is a PDF
+            if rfp_link["type"] == "pdf":
+                pdf_bytes = download_pdf(rfp_link["url"], session)
+                if pdf_bytes:
+                    pdf_text, method_used = extract_pdf_text(pdf_bytes)
+                    if pdf_text:
+                        print(f"Successfully extracted the text from the PDF of the RFP for {rfp_link['title']}")
+                    else:
+                        print(f"Failed to extract the text from the PDF of the RFP for {rfp_link['title']}")
+                else:
+                    print(f"Failed to download the PDF of the RFP for {rfp_link['title']}")
             
     except Exception as e:
         print(f"Error scraping the RFP pages for tribe {tribe['Tribe']}")

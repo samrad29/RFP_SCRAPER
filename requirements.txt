@@ -3,3 +3,6 @@ python-dotenv
 beautifulsoup4
 lxml
 psycopg[binary]
+pymupdf
+pdf2image
+pytesseract

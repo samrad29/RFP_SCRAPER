@@ -21,6 +21,7 @@ REQUEST_TIMEOUT_S = 30
 MAX_RETRIES = 2
 RETRY_BACKOFF_S = 1.5
 
+RFP_KEYWORDS = ["rfp", "proposal", "bid", "rfq", "itb", "rfqa"]
 
 def fetch_html(url: str, session: requests.Session | None = None) -> str:
     sess = session or requests.Session()
@@ -43,44 +44,7 @@ def fetch_html(url: str, session: requests.Session | None = None) -> str:
                 raise last_exc from None
     raise RuntimeError("unreachable")
 
-
-def parse_html(html: str) -> BeautifulSoup:
-    return BeautifulSoup(html, "html.parser")
-
-
-def _largest_text_div(soup: BeautifulSoup):
-    best = None
-    best_len = 0
-    for div in soup.find_all("div"):
-        t = div.get_text(" ", strip=True)
-        n = len(t)
-        if n > best_len:
-            best_len = n
-            best = div
-    return best
-
-
-def extract_main_content(soup: BeautifulSoup) -> str:
-    root = (
-        soup.select_one("#DeltaPlaceHolderMain")
-        or soup.select_one("#MainContent")
-        or soup.select_one("#content")
-        or soup.select_one("main")
-        or soup.select_one('[role="main"]')
-    )
-    if root is None:
-        root = _largest_text_div(soup) or soup.body
-    if root is None:
-        return ""
-    text = extract_clean_text(root)
-    if not text.strip():
-        text = root.get_text("\n", strip=True)
-    return text.strip()
-
-
-RFP_KEYWORDS = ["rfp", "proposal", "bid", "rfq", "itb"]
-
-def extract_rfp_links(html, base_url):
+def extract_rfp_links(html, base_url, session: requests.Session):
     soup = BeautifulSoup(html, "lxml")
 
     candidates = []
@@ -97,7 +61,44 @@ def extract_rfp_links(html, base_url):
             candidates.append({
                 "title": text,
                 "url": url,
-                "type": "pdf" if url.endswith(".pdf") else "html"
+                "type": classify_content_type(url, session)
             })
 
     return candidates
+
+def classify_content_type(url: str, session: requests.Session) -> str:
+    """
+    Classify the content type of the URL
+    Try to use the HEAD request to get the content type, 
+    if that fails, use the GET request to get the content type from the first few bytes.
+    """
+    path = urlparse(url).path.lower()
+
+    if path.endswith(".pdf"):
+        return "pdf"
+
+    if "viewdocument" in url.lower():
+        return "pdf"
+
+    try:
+        resp = session.head(url, allow_redirects=True, timeout=REQUEST_TIMEOUT_S)
+        content_type = resp.headers.get("Content-Type", "").lower()
+
+        if "pdf"in content_type:
+            return "pdf"
+        if "html" in content_type:
+            return "html"
+    except Exception:
+        pass
+    try:
+        resp = session.get(url, stream=True, timeout=REQUEST_TIMEOUT_S)
+        if resp.status_code == 200:
+            content_type = resp.headers.get("Content-Type", "").lower()
+            if "pdf" in content_type:
+                return "pdf"
+            if "html" in content_type:
+                return "html"
+        else: 
+            return "unknown"
+    except Exception:
+        return "unknown"
