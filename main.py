@@ -3,11 +3,11 @@ import json
 import os
 from dotenv import load_dotenv
 
-from db_util import get_db_connection
+from utils.db_util import get_db_connection
 
-from scraping_utils import fetch_html, extract_rfp_links
+from utils.scraping_utils import fetch_html, extract_rfp_links
 
-from pdf_utils import extract_pdf_text, download_pdf
+from utils.pdf_utils import extract_pdf_text, download_pdf
 
 def main(db_connection, job_id: str = None):
     ## Get the list of RFP pages from the spreadsheet
