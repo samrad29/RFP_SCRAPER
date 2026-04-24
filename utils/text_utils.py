@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-# Precompiled regexes for performance (important at scale)
+# Things to remove from the text to make it easier to parse
 PAGE_NUMBERS = re.compile(r"\bPage\s+\d+(\s+of\s+\d+)?\b", re.IGNORECASE)
 MULTI_SPACES = re.compile(r"[ \t]+")
 EXCESS_NEWLINES = re.compile(r"\n{3,}")
@@ -10,9 +10,7 @@ HEADER_FOOTER_GARBAGE = re.compile(r"^\s*\d+\s*$", re.MULTILINE)
 
 def clean_text(text: str, *, preserve_lines: bool = True) -> str:
     """
-    Production-grade text normalization for unstructured documents (PDF/HTML/OCR).
-    
-    Designed for downstream LLM extraction.
+    Clean the text by removing extra whitespace and newlines
     """
     if not text:
         return ""
