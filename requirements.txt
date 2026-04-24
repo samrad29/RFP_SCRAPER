@@ -6,3 +6,5 @@ psycopg[binary]
 pymupdf
 pdf2image
 pytesseract
+groq
+openai

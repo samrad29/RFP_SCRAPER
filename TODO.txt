@@ -9,8 +9,22 @@
 
 ********************* Building Functionality ******************
 1. Implementing scraping for the sources we have identified
-2. 
+    i. Cleaning Data
+        * I think we have pdfs pretty much ready to go
+        * Need to get the html working
+    ii. Extracting Data
+        * need to determine if the link we are looking at is an rfp or not (should this be an earlier step?)
+        * 
+    iii. Categrozing RFPs
+        * First sort've RFP we want to be able to recognize is feasability studies
 
+2. Deduplicating
+    i. If something has been updated, how do we pick that up? How do we know it is not just a new RFP?
+
+3. Ongoing source identification
+    i. Should we use AI for this?
+
+4. Add hashing to reduce the amount of work redone
 
 
 ********************* Productionalizing ***********************
@@ -18,4 +32,3 @@ A. Deployemnt
 B. Finding Additional sources
 C. Putting in a DB somewhere
 D. How do we get the alerts in front of users
-E. 
