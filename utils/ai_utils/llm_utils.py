@@ -1,5 +1,6 @@
 import time
 import random
+
 class TokenTracker:
     def __init__(self):
         self.usage = {

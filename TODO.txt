@@ -13,8 +13,8 @@
         * I think we have pdfs pretty much ready to go
         * Need to get the html working
     ii. Extracting Data
-        * need to determine if the link we are looking at is an rfp or not (should this be an earlier step?)
-        * 
+        * use free llamma-instant hosted by groq to classify as rfp or not
+        * use gpt-4o-mini to extract data from the rfp
     iii. Categrozing RFPs
         * First sort've RFP we want to be able to recognize is feasability studies
 
