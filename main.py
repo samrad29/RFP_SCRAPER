@@ -2,11 +2,12 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+from db_util import get_db_connection
 
 from scraping_utils import fetch_html
 
 
-def main():
+def main(db_connection, job_id: str):
     ## Get the list of RFP pages from the spreadsheet
     load_dotenv()
     SHEETS_APP_URL = os.getenv("SHEETS_APP_URL")
@@ -41,4 +42,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    db_connection = get_db_connection()
+    main(db_connection)
