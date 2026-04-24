@@ -39,8 +39,6 @@ llm = LLMService(
 
 def main(db_connection, job_id: str = None):
     ## Get the list of RFP pages from the spreadsheet
-
-
     session = requests.Session()
     try:
         response = requests.get(SHEETS_APP_URL).json()
