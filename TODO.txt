@@ -1,0 +1,21 @@
+********************* Functional Requirements ****************
+- What do we want this app to be able to do?
+    > Monitor tribal RFP pages and create alerts when new grants are posted.
+        >> users will probably want to be able to filter alerts to only get alerts in certain categories or project size 
+    > Categorize the grants so users can subscribe to all postings.
+    > Extract information about the RFP souch as project size and proposal deadlines (include links)
+
+
+
+********************* Building Functionality ******************
+1. Implementing scraping for the sources we have identified
+2. 
+
+
+
+********************* Productionalizing ***********************
+A. Deployemnt
+B. Finding Additional sources
+C. Putting in a DB somewhere
+D. How do we get the alerts in front of users
+E. 
