@@ -57,28 +57,6 @@ def initialize_db(conn):
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )""")
-
-            ## Create the RFP versions table
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS rfp_versions (
-                rfp_version_id SERIAL PRIMARY KEY,
-                rfp_id SERIAL NOT NULL REFERENCES rfps(rfp_id),
-                version_hash TEXT NOT NULL,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                deadline DATE,
-                link TEXT,
-                categories TEXT, ## json array of strings
-                project_size TEXT,
-                attachments TEXT, ## json array of strings
-                ai_summary TEXT,
-                is_current BOOLEAN NOT NULL DEFAULT FALSE,
-                change_summary TEXT,
-                raw_text TEXT,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )""")
-
             ## Create an RFP table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS rfps (
@@ -86,6 +64,26 @@ def initialize_db(conn):
                 source_id INT NOT NULL REFERENCES sources(source_id),
                 title TEXT NOT NULL,
                 hash TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )""")
+            ## Create the RFP versions table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS rfp_versions (
+                rfp_version_id SERIAL PRIMARY KEY,
+                rfp_id INTEGER NOT NULL REFERENCES rfps(rfp_id),
+                version_hash TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                deadline DATE,
+                link TEXT,
+                categories TEXT,
+                project_size TEXT,
+                attachments TEXT,
+                ai_summary TEXT,
+                is_current BOOLEAN NOT NULL DEFAULT FALSE,
+                change_summary TEXT,
+                raw_text TEXT,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )""")
@@ -97,16 +95,11 @@ def initialize_db(conn):
     finally:
         conn.close()
 
-def reset_db(conn):
-    """
-    Reset the database
-    """
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-            DROP TABLE IF EXISTS rfp_scraper_jobs, sources, documents, rfps, rfp_versions
-            """)
-            conn.commit()
-    except Exception as e:
-        print(f"Error resetting the database: {e}")
-        raise RuntimeError(f"Error resetting the database: {e}")
+
+###### Posting to excel looks like this: data = [
+#     {
+#         "tribe_name": "Menominee",
+#         "title": "IT Upgrade",
+#         "due_date": "2026-05-01"
+#     }
+# ]

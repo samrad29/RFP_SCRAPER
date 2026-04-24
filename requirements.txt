@@ -1,4 +1,5 @@
 requests
 python-dotenv
 beautifulsoup4
-psycopg
+lxml
+psycopg[binary]

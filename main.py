@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 from db_util import get_db_connection
 
 from scraping_utils import fetch_html
+from scraping_utils import extract_rfp_links
 
 
-def main(db_connection, job_id: str):
+def main(db_connection, job_id: str = None):
     ## Get the list of RFP pages from the spreadsheet
     load_dotenv()
     SHEETS_APP_URL = os.getenv("SHEETS_APP_URL")
@@ -26,12 +27,23 @@ def main(db_connection, job_id: str):
             if tribe["rfp_url"] == "None":
                 print(f"No RFP URL found for tribe {tribe['Tribe']}, skipping")
                 continue
+            
+            # Grab the html of the RFPs page
             html = fetch_html(tribe["rfp_url"], session)
-
             if html:
-                print(f"Successfully scraped the RFP page for {tribe['Tribe']}")
+                print(f"Successfully fetched the HTML of the RFP page for {tribe['Tribe']}")
             else:
-                print(f"Failed to scrape the RFP page for {tribe['Tribe']}")
+                print(f"Failed to fetch the HTML of the RFP page for {tribe['Tribe']}")
+            
+            ## Extract the RFP links from the page (assumes the page has a list of links to RFPs)
+            rfp_links = extract_rfp_links(html, tribe["rfp_url"])
+            for rfp_link in rfp_links:
+                print(rfp_link["title"], rfp_link["url"], rfp_link["type"])
+            if len(rfp_links) == 0:
+                print(f"No Candidate RFP links found for tribe {tribe['Tribe']}")
+                continue
+
+            
     except Exception as e:
         print(f"Error scraping the RFP pages for tribe {tribe['Tribe']}")
         print(f"Error scraping the RFP pages: {e}")
@@ -44,3 +56,4 @@ def main(db_connection, job_id: str):
 if __name__ == "__main__":
     db_connection = get_db_connection()
     main(db_connection)
+    db_connection.close()
