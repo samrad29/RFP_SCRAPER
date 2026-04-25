@@ -1,13 +1,6 @@
 from utils.ai_utils.req_resp_obj import LLMRequest, LLMResponse
 from utils.ai_utils.llm_utils import with_backoff
-from groq import Groq
-from openai import OpenAI
 
-def get_groq_client(groq_api_key: str) -> Groq:
-    return Groq(api_key=groq_api_key)
-
-def get_openai_client(openai_api_key: str) -> OpenAI:
-    return OpenAI(api_key=openai_api_key)
 
 class GroqProvider:
     def __init__(self, client):

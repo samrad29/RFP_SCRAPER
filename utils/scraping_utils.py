@@ -7,6 +7,8 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from utils.pdf_utils import download_pdf, extract_pdf_text
+from utils.text_utils import clean_text
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -102,3 +104,20 @@ def classify_content_type(url: str, session: requests.Session) -> str:
             return "unknown"
     except Exception:
         return "unknown"
+
+def get_link_text(rfp_link: dict, session: requests.Session) -> str:
+    if rfp_link["type"] == "html":
+        html = fetch_html(rfp_link["url"], session)
+        if html:
+            return clean_text(html)
+        else:
+            return None
+    elif rfp_link["type"] == "pdf":
+        pdf_bytes = download_pdf(rfp_link["url"], session)
+        if pdf_bytes:
+            text, method_used = extract_pdf_text(pdf_bytes)
+            return text
+        else:
+            return None
+    else:
+        return None

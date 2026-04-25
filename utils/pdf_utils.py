@@ -1,6 +1,5 @@
 import fitz  # PyMuPDF
 import requests
-from scraping_utils import REQUEST_TIMEOUT_S
 from pdf2image import convert_from_bytes
 import pytesseract
 
@@ -22,7 +21,7 @@ def download_pdf(url: str, session: requests.Session) -> bytes:
     """
     Just download the pdf from the link
     """
-    resp = session.get(url, timeout=REQUEST_TIMEOUT_S)
+    resp = session.get(url, timeout=10)
     resp.raise_for_status()
     return resp.content
 

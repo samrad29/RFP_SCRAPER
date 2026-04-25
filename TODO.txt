@@ -32,3 +32,4 @@ A. Deployemnt
 B. Finding Additional sources
 C. Putting in a DB somewhere
 D. How do we get the alerts in front of users
+E. Note we will need to install system dependencies wherever we are deployed including poppler and tesseract

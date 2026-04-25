@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 from utils.ai_utils.req_resp_obj import LLMRequest, LLMMessage
 from utils.ai_utils.llm_clients import LLMService
 
+load_dotenv()
+GROQ_MODEL_NAME = os.getenv("GROQ_MODEL_NAME")
+OPENAI_MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
+
 
 def ai_classify_rfp(text: str, llm: LLMService) -> bool:
     """
@@ -25,10 +29,10 @@ def ai_classify_rfp(text: str, llm: LLMService) -> bool:
                     "- NOT_RFP\n\n"
                     "Do not explain your answer. Do not add punctuation. Do not include any extra text."
                 )
-    user_content = f"Classify this document:\n\n--- DOCUMENT START ---\n{text[:12000]}\n--- DOCUMENT END ---"
+    user_content = f"Classify this document:\n\n--- DOCUMENT START ---\n{text[:8000]}\n--- DOCUMENT END ---"
 
     req = LLMRequest(
-        model="llama3-70b-8192",
+        model=GROQ_MODEL_NAME,
         provider="groq",
         messages=[
             LLMMessage(role="system", content=system_content),
@@ -41,10 +45,10 @@ def ai_classify_rfp(text: str, llm: LLMService) -> bool:
     print(f"Completion Tokens: {result.completion_tokens}")
     print(f"Total Tokens: {result.total_tokens}")
     print(f"Result content: {result.content}")
-    is_rfp = "RFP" in result.content
+    is_rfp = "RFP" in result.content and "NOT_RFP" not in result.content
     return is_rfp
 
-def ai_extract_rfp_data(text: str, openai_client: openai.OpenAI, openai_model_name: str) -> dict:
+def ai_extract_rfp_data(text: str, llm: LLMService) -> dict:
     """
     Extract the data from the text
     """
