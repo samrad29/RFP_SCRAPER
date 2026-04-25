@@ -24,20 +24,8 @@ GROQ_MODEL_NAME = os.getenv("GROQ_MODEL_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
 
-groq_client = Groq(GROQ_API_KEY)
-openai_client = OpenAI(OPENAI_API_KEY)
 
-groq_provider = GroqProvider(groq_client)
-openai_provider = OpenAIProvider(openai_client)
-
-llm = LLMService(
-    groq_provider,
-    openai_provider,
-    TokenTracker()
-)
-
-
-def main(db_connection, job_id: str = None):
+def main(db_connection, llm: LLMService, job_id: str = None):
     ## Get the list of RFP pages from the spreadsheet
     session = requests.Session()
     try:
@@ -86,7 +74,7 @@ def main(db_connection, job_id: str = None):
 
 
             for text in rfp_text:
-                if ai_classify_rfp(text, groq_client, GROQ_MODEL_NAME):
+                if ai_classify_rfp(text, llm):
                     print(f"The text is an RFP")
                     rfps_to_process.append({
                         "tribe": tribe["Tribe"],
@@ -109,5 +97,17 @@ def main(db_connection, job_id: str = None):
 
 if __name__ == "__main__":
     db_connection = get_db_connection()
-    main(db_connection)
+
+    groq_client = Groq(GROQ_API_KEY)
+    openai_client = OpenAI(OPENAI_API_KEY)
+
+    groq_provider = GroqProvider(groq_client)
+    openai_provider = OpenAIProvider(openai_client)
+
+    llm = LLMService(
+        groq_provider,
+        openai_provider,
+        TokenTracker()
+    )
+    main(db_connection, llm)
     db_connection.close()
