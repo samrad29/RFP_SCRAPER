@@ -2,7 +2,7 @@ import os
 import psycopg
 from dotenv import load_dotenv
 
-def get_db_connection(test_mode: bool = False):
+def get_db_connection():
     """
     Get a connection to the database
     """
@@ -40,7 +40,9 @@ def initialize_db(conn):
             CREATE TABLE IF NOT EXISTS sources (
                 source_id SERIAL PRIMARY KEY,
                 tribe_name VARCHAR(255) NOT NULL,
-                url TEXT,
+                source_url TEXT,
+                status TEXT,
+                status_message TEXT,
                 rfp_url TEXT,
                 scrape_type TEXT,
                 hash TEXT,
@@ -54,6 +56,7 @@ def initialize_db(conn):
                 document_type TEXT NOT NULL,
                 document_url TEXT NOT NULL,
                 document_hash TEXT NOT NULL,
+                active BOOLEAN NOT NULL DEFAULT TRUE,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )""")
@@ -93,8 +96,47 @@ def initialize_db(conn):
         print(f"Error initializing the database: {e}")
         raise RuntimeError(f"Error initializing the database: {e}")
     finally:
-        conn.close()
+        pass
 
+
+def update_source_status(tribe_name: str, status: str, message: str, db_connection: psycopg.Connection):
+    """
+    Update the status of the source
+    """
+    try:
+        with db_connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE sources SET status = %s, status_message = %s WHERE tribe_name = %s",
+                (status, message, tribe_name),
+            )
+            db_connection.commit()
+    except Exception as e:
+        print(f"Error updating the status of the source: {e}")
+        raise RuntimeError(f"Error updating the status of the source: {e}")
+
+def get_source_status(tribe_name: str, db_connection: psycopg.Connection):
+    """
+    Get the status of the source
+    """
+    try:
+        with db_connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM sources WHERE tribe_name = %s", (tribe_name,))
+            result = cursor.fetchone()
+            return result
+    except Exception as e:
+        print(f"Error getting the status of the source: {e}")
+        raise RuntimeError(f"Error getting the status of the source: {e}")
+
+def update_document_active(source_id: int, document_urls: list[str], db_connection: psycopg.Connection):
+    """
+    Update the active status of the documents
+    """
+    try:
+        with db_connection.cursor() as cursor:
+            cursor.execute("UPDATE documents SET active = false WHERE source_id = %s AND document_url NOT IN (%s)", (source_id, document_urls))
+            db_connection.commit()
+    except Exception as e:
+        print(f"Error updating the active status of the documents: {e}")
 
 ###### Posting to excel looks like this: data = [
 #     {

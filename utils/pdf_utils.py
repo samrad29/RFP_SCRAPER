@@ -21,10 +21,13 @@ def download_pdf(url: str, session: requests.Session) -> bytes:
     """
     Just download the pdf from the link
     """
-    resp = session.get(url, timeout=10)
-    resp.raise_for_status()
-    return resp.content
-
+    try:
+        resp = session.get(url, allow_redirects=True, timeout=10)
+        resp.raise_for_status()
+        return resp.content
+    except Exception as e:
+        print(f"Error downloading the PDF: {e}")
+        return None
 
 def extract_text_pymupdf(pdf_bytes: bytes) -> str:
     """

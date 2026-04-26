@@ -1,4 +1,4 @@
-from db_util import get_db_connection
+from utils.db_util import get_db_connection
 
 def reset_db(conn):
     """

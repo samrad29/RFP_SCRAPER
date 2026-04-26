@@ -10,8 +10,8 @@
 ********************* Building Functionality ******************
 1. Implementing scraping for the sources we have identified
     i. Cleaning Data
-        * I think we have pdfs pretty much ready to go
-        * Need to get the html working
+        * I think we have pdfs and html pretty much working
+        * .php sites are causing issues
     ii. Extracting Data
         * use free llamma-instant hosted by groq to classify as rfp or not
         * use gpt-4o-mini to extract data from the rfp
@@ -33,3 +33,4 @@ B. Finding Additional sources
 C. Putting in a DB somewhere
 D. How do we get the alerts in front of users
 E. Note we will need to install system dependencies wherever we are deployed including poppler and tesseract
+F. Figure out how to handle bad ssl cert

@@ -3,7 +3,7 @@ import json
 import os
 from dotenv import load_dotenv
 
-from utils.db_util import get_db_connection
+from utils.db_util import get_db_connection, update_source_status, update_document_active
 
 from utils.scraping_utils import fetch_html, extract_rfp_links, get_link_text
 
@@ -12,6 +12,8 @@ from utils.pdf_utils import extract_pdf_text, download_pdf
 from utils.ai_utils.llm_clients import GroqProvider, OpenAIProvider, LLMService
 from utils.ai_utils.prompts import ai_classify_rfp, ai_extract_rfp_data
 from utils.ai_utils.llm_utils import TokenTracker
+
+from utils.cache_utils.cache import cache_source, cache_document, has_document_changed, get_cached_rfp_links
 
 
 from groq import Groq
@@ -37,27 +39,42 @@ def main(db_connection, llm: LLMService, job_id: str = None):
         return {"message": str(e), "stage": "fetching urls from spreadsheet", "success": False}
     
     ## Scrape the RFP pages
+    current_tribe_name = "unknown"
     try:
         other_types_to_process = [] # Code is currently setup to process html and pdf links. Create an array to hold links of other types.
         rfps_to_process = [] # Will hold the dicts of links we determined to be RFPs
 
         for tribe in rfp_urls:
+            current_tribe_name = tribe.get("Tribe", "unknown")
             if tribe["rfp_url"] == "None":
                 print(f"No RFP URL found for tribe {tribe['Tribe']}, skipping")
                 continue
             
             # Grab the html of the RFPs page
-            html = fetch_html(tribe["rfp_url"], session)
-            if html:
+            html_response = fetch_html(tribe["rfp_url"], session)
+            if html_response["success"]:
                 print(f"Successfully fetched the HTML of the RFP page for {tribe['Tribe']}")
+                update_source_status(tribe["Tribe"], "success", "HTML fetched successfully", db_connection)
+                html = html_response["html"]
             else:
-                print(f"Failed to fetch the HTML of the RFP page for {tribe['Tribe']}")
-
-            ## TODO: Add step here to hash the page and check if it has changed since last time we scraped it
+                print(f"Failed to fetch the HTML of the RFP page for {tribe['Tribe']}: {html_response['message']}")
+                update_source_status(tribe["Tribe"], "failed", html_response["message"], db_connection)
+                continue
             
-            ## Extract the RFP links from the tribe's page
+            # Check source cache
+            source_cache_response = cache_source(tribe["rfp_url"], tribe["Tribe"], html, db_connection)
+            if source_cache_response["new"]:
+                print(f"RFP Page for tribe {tribe['Tribe']} is new or has changed, scraping it")
+
+            source_id= source_cache_response["source_id"]
+
+            ## Extract the RFP links from the tribe's page if it is new or has changed
             ## TODO: what if the rfps are listed out with no link?
-            rfp_links = extract_rfp_links(html, tribe["rfp_url"], session)
+            if source_cache_response["new"]:
+                rfp_links = extract_rfp_links(html, tribe["rfp_url"], session)
+                update_document_active(source_id, rfp_links, db_connection)
+            else: 
+                rfp_links = get_cached_rfp_links(source_id, db_connection)
 
             # For each link, get the text and determine if it is an RFP
             for rfp_link in rfp_links:
@@ -69,10 +86,20 @@ def main(db_connection, llm: LLMService, job_id: str = None):
                     other_types_to_process.append(rfp_link) # make note of other types of links
                     continue
                 if text is None: # If we failed to extract text, skip the link
+                    if source_cache_response["new"]: # If the source is new, cache the link as failed to extract text so that next run the link is retried
+                        rfp_link["text"] = "Failed to extract text"
+                        cache_document(rfp_link, source_id, db_connection)
                     print(f"Failed to extract text from the link for {rfp_link['title']}")
                     continue
 
-                ## TODO: Add step here to hash the text of the rfp link and check if it has changed since last time we scraped it
+                if has_document_changed(source_id, text, rfp_link["url"], db_connection):
+                    print(f"The document has changed since last time we scraped it")
+                    rfp_link["text"] = text
+                    cache_document(rfp_link, source_id, db_connection)
+                else:
+                    print(f"The document has not changed since last time we scraped it")
+                    continue
+
                 print(f"Successfully extracted the text from the link for {rfp_link['title']}")
                 if ai_classify_rfp(text, llm):
                     print(f"The text is an RFP")
@@ -101,12 +128,12 @@ def main(db_connection, llm: LLMService, job_id: str = None):
         for other_type in other_types_to_process:
             print(f"Other type: {other_type}")
 
-    except Exception as e:
-        print(f"Error scraping the RFP pages for tribe {tribe['Tribe']}")
-        print(f"Error scraping the RFP pages: {e}")
-        return {"message": str(e), "stage": f"scraping rfp pages, tribe {tribe['Tribe']}", "success": False}
-    finally:
         return {"message": "RFP pages scraped successfully", "stage": "scraping rfp pages", "success": True}
+
+    except Exception as e:
+        print(f"Error scraping the RFP pages for tribe {current_tribe_name}")
+        print(f"Error scraping the RFP pages: {e}")
+        return {"message": str(e), "stage": f"scraping rfp pages, tribe {current_tribe_name}", "success": False}
 
 
 

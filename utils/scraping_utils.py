@@ -28,23 +28,47 @@ RFP_KEYWORDS = ["rfp", "proposal", "bid", "rfq", "itb", "rfqa"]
 def fetch_html(url: str, session: requests.Session | None = None) -> str:
     sess = session or requests.Session()
     last_exc: Exception | None = None
+
     for attempt in range(MAX_RETRIES + 1):
         try:
+            # First attempt: normal SSL
             resp = sess.get(
                 url,
                 headers=DEFAULT_HEADERS,
                 timeout=REQUEST_TIMEOUT_S,
                 allow_redirects=True,
+                verify=True,
             )
             resp.raise_for_status()
-            return resp.text
+            return {"success": True, "html": resp.text}
+
+        # could try to scrape without verifying the SSL cert, but it is risky and should investigate more
+        # except requests.exceptions.SSLError as ssl_err: 
+        #     # If SSL error, try to scrape without verifying the SSL cert (maybe a little risky, should investigate more)
+        #     print(f"[SSL ERROR] {url} — retrying without verification")
+        #     last_exc = ssl_err
+        #     try:
+        #         resp = sess.get(
+        #             url,
+        #             headers=DEFAULT_HEADERS,
+        #             timeout=REQUEST_TIMEOUT_S,
+        #             allow_redirects=True,
+        #             verify=False,
+        #         )
+        #         resp.raise_for_status()
+        #         return resp.text
+
+        #     except Exception as fallback_err:
+        #         last_exc = fallback_err
+
         except (requests.RequestException, OSError) as e:
             last_exc = e
-            if attempt < MAX_RETRIES:
-                time.sleep(RETRY_BACKOFF_S * (attempt + 1))
-            else:
-                raise last_exc from None
-    raise RuntimeError("unreachable")
+
+        if attempt < MAX_RETRIES: # If we have not retried the max number of times, sleep and retry
+            time.sleep(RETRY_BACKOFF_S * (attempt + 1))
+        else:
+            return {"message": str(last_exc), "success": False} # If we have retried the max number of times, raise the last exception
+    return {"message": f"Failed to fetch {url}", "success": False}
 
 def extract_rfp_links(html, base_url, session: requests.Session):
     soup = BeautifulSoup(html, "lxml")
@@ -108,8 +132,8 @@ def classify_content_type(url: str, session: requests.Session) -> str:
 def get_link_text(rfp_link: dict, session: requests.Session) -> str:
     if rfp_link["type"] == "html":
         html = fetch_html(rfp_link["url"], session)
-        if html:
-            return clean_text(html)
+        if html["success"]:
+            return clean_text(html["html"])
         else:
             return None
     elif rfp_link["type"] == "pdf":
