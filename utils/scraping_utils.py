@@ -104,6 +104,8 @@ def extract_rfp_links(html, base_url, session: requests.Session):
             candidates.append({
                 "title": src,
                 "url": url,
+                "base_url": base_url,
+                "href": src,
                 "type": classify_content_type(url, session)
             })
 
@@ -124,6 +126,7 @@ def classify_content_type(url: str, session: requests.Session) -> str:
         return "pdf"
 
     try:
+        # First try a HEAD request to get the content type
         resp = session.head(url, allow_redirects=True, timeout=REQUEST_TIMEOUT_S)
         content_type = resp.headers.get("Content-Type", "").lower()
 
@@ -131,9 +134,11 @@ def classify_content_type(url: str, session: requests.Session) -> str:
             return "pdf"
         if "html" in content_type:
             return "html"
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"HEAD Failed for URL: {url}: {e}")
+
     try:
+        # If HEAD request fails, use a full GET request and stream the response
         resp = session.get(url, stream=True, timeout=REQUEST_TIMEOUT_S)
         if resp.status_code == 200:
             content_type = resp.headers.get("Content-Type", "").lower()
@@ -144,6 +149,7 @@ def classify_content_type(url: str, session: requests.Session) -> str:
         else: 
             return "unknown"
     except Exception:
+        print(f"GET failed as well for URL: {url}: {e}")
         return "unknown"
 
 def get_link_text(rfp_link: dict, session: requests.Session) -> str:
@@ -154,7 +160,7 @@ def get_link_text(rfp_link: dict, session: requests.Session) -> str:
         else:
             return None
     elif rfp_link["type"] == "pdf":
-        pdf_bytes = download_pdf(rfp_link["url"], session)
+        pdf_bytes = download_pdf(rfp_link, session)
         if pdf_bytes:
             text, method_used = extract_pdf_text(pdf_bytes)
             return text

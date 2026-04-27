@@ -17,18 +17,19 @@ def extract_pdf_text(pdf_bytes: bytes) -> tuple[str, str]:
         return text, "ocr"
 
 
-def download_pdf(url: str, session: requests.Session) -> bytes:
+def download_pdf(rfp_link: dict, session: requests.Session) -> bytes:
     """
     Just download the pdf from the link
     """
     try:
+        url = rfp_link["url"]
         resp = session.get(url, allow_redirects=True, timeout=10)
         if resp.status_code == 404:
             print(f"PDF not found at {url}, retrying with Doc Center Fix")
-            doc_center_fix_url = url.replace("viewdocument", "doccenter")
+            doc_center_fix_url = root_relative_fix(rfp_link)
             resp = session.get(doc_center_fix_url, allow_redirects=True, timeout=10)
             if resp.status_code == 404:
-                print(f"Doc Center Fix failed to find the PDF at {doc_center_fix_url}")
+                print(f"Root Relatative Fix failed to find the PDF at {doc_center_fix_url}")
                 resp.raise_for_status()
                 return None
             return resp.content
@@ -39,11 +40,15 @@ def download_pdf(url: str, session: requests.Session) -> bytes:
         print(f"Error downloading the PDF: {e}")
         return None
 
-def doc_center_fix(broken_url: str) -> bytes:
+def root_relative_fix(rfp_link: dict) -> bytes:
     """
+    Try to fix the URL by using root relative href
     """
-    
-    return new_url
+    base_url = rfp_link["base_url"]
+    href = rfp_link["href"]
+    domain = base_url.split("/")[0:3]
+    root = "/".join(domain)
+    return root + "/" + href.lstrip("/")
 
 def extract_text_pymupdf(pdf_bytes: bytes) -> str:
     """

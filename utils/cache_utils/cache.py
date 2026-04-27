@@ -31,8 +31,10 @@ def cache_document(rfp_link: dict, source_id: int, db_connection: psycopg.Connec
         current_hash = hash_text(rfp_link["text"])
         document_url = rfp_link["url"]
         document_type = rfp_link["type"]
+        document_base_url = rfp_link["base_url"]
+        document_href = rfp_link["href"]
         with db_connection.cursor() as cursor:
-            cursor.execute("""INSERT INTO documents (source_id, document_url, document_hash, document_type) VALUES (%s, %s, %s, %s)""", (source_id, document_url, current_hash, document_type))
+            cursor.execute("""INSERT INTO documents (source_id, document_url, document_base_url, document_href, document_hash, document_type) VALUES (%s, %s, %s, %s, %s, %s)""", (source_id, document_url, document_base_url, document_href, current_hash, document_type))
             db_connection.commit()
     except Exception as e:
         print(f"Error caching the document: {e}")
@@ -45,7 +47,7 @@ def get_cached_rfp_links(source_id: int, db_connection: psycopg.Connection):
     try:
         with db_connection.cursor() as cursor:
             cursor.execute(
-                "SELECT document_url, document_type FROM documents WHERE source_id = %s and active = true",
+                "SELECT document_url, document_base_url, document_href, document_type FROM documents WHERE source_id = %s and active = true",
                 (source_id,),
             )
             result = cursor.fetchall()
@@ -53,7 +55,9 @@ def get_cached_rfp_links(source_id: int, db_connection: psycopg.Connection):
                 {
                     "title": "",
                     "url": row[0],
-                    "type": row[1],
+                    "base_url": row[1],
+                    "href": row[2],
+                    "type": row[3],
                 }
                 for row in result
             ]

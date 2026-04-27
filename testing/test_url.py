@@ -37,8 +37,10 @@ def test_document(rfp_link: dict, session: requests.Session, llm: LLMService) ->
 if __name__ == "__main__":
     session = requests.Session()
     rfp_link = {
-        "url": "https://www.menominee-nsn.gov/ViewDocument.aspx?RFPid=64",
-        "parent_url": "https://www.menominee-nsn.gov/BusinessPages/RequestForProposals",
+        "url": "https://cms9files.revize.com/redcliffband/rfp/Document%20Center/Request%20for%20Proposals/Internet%20Service%20Provider%20Services%20RFP%2010.2025.pdf?t=202510301537330&t=202510301537330",
+        "parent_url": "https://www.redcliff-nsn.gov/rfp/",
+        "base_url": "https://www.redcliff-nsn.gov/rfp/",
+        "href": "Document Center/Request for Proposals/2026 Confidentiality Audit RFP.pdf?t=202603121407330",
         "type": "pdf",
     }
     
