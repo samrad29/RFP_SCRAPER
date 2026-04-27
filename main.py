@@ -69,7 +69,8 @@ def main(db_connection, llm: LLMService, job_id: str = None):
             source_id= source_cache_response["source_id"]
 
             ## Extract the RFP links from the tribe's page if it is new or has changed
-            ## TODO: what if the rfps are listed out with no link?
+            ## TODO: what if the rfps are listed out with no link and no pdf viewed? just plain text?
+            ## Tier 3 priority rn
             if source_cache_response["new"]:
                 rfp_links = extract_rfp_links(html, tribe["rfp_url"], session)
                 update_document_active(source_id, rfp_links, db_connection)

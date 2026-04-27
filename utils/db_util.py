@@ -46,7 +46,8 @@ def initialize_db(conn):
                 rfp_url TEXT,
                 scrape_type TEXT,
                 hash TEXT,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )""")
             ## Create the documents table
             cursor.execute("""

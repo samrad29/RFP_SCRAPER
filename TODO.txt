@@ -25,12 +25,14 @@
     i. Should we use AI for this?
 
 4. Add hashing to reduce the amount of work redone
-
+    i. We could make this smarter. However, team is not really concerned about cost atm. 
+        Priority number 1, 2, and 3 are to get it working. Then we can worry about cost. 
 
 ********************* Productionalizing ***********************
 A. Deployemnt
+    * Postgres DB is on render
 B. Finding Additional sources
-C. Putting in a DB somewhere
 D. How do we get the alerts in front of users
+    * Going to be more of a portal than I originally imagined...
 E. Note we will need to install system dependencies wherever we are deployed including poppler and tesseract
 F. Figure out how to handle bad ssl cert
