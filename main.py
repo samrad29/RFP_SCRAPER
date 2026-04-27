@@ -116,6 +116,10 @@ def main(db_connection, llm: LLMService, job_id: str = None):
             if len(rfp_links) == 0:
                 print(f"No Candidate RFP links found for tribe {tribe['Tribe']}")
                 continue
+            
+            for rfp in rfps_to_process:
+                rfp_data = ai_extract_rfp_data(rfp["text"], llm)
+                print(f"RFP data: {rfp_data}")
 
             # TODO: investigate the rfp link more to extract info about the rfp (title, description, deadline, project size)
             # TODO: categorize the rfp? Maybe do this at the same time as extracting the data?

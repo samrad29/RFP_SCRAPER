@@ -23,11 +23,27 @@ def download_pdf(url: str, session: requests.Session) -> bytes:
     """
     try:
         resp = session.get(url, allow_redirects=True, timeout=10)
-        resp.raise_for_status()
-        return resp.content
+        if resp.status_code == 404:
+            print(f"PDF not found at {url}, retrying with Doc Center Fix")
+            doc_center_fix_url = url.replace("viewdocument", "doccenter")
+            resp = session.get(doc_center_fix_url, allow_redirects=True, timeout=10)
+            if resp.status_code == 404:
+                print(f"Doc Center Fix failed to find the PDF at {doc_center_fix_url}")
+                resp.raise_for_status()
+                return None
+            return resp.content
+        else:
+            resp.raise_for_status()
+            return resp.content
     except Exception as e:
         print(f"Error downloading the PDF: {e}")
         return None
+
+def doc_center_fix(broken_url: str) -> bytes:
+    """
+    """
+    
+    return new_url
 
 def extract_text_pymupdf(pdf_bytes: bytes) -> str:
     """

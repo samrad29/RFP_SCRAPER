@@ -55,6 +55,8 @@ def initialize_db(conn):
                 source_id INT NOT NULL REFERENCES sources(source_id),
                 document_type TEXT NOT NULL,
                 document_url TEXT NOT NULL,
+                document_base_url TEXT NOT NULL,
+                document_href TEXT NOT NULL,
                 document_hash TEXT NOT NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -127,11 +129,12 @@ def get_source_status(tribe_name: str, db_connection: psycopg.Connection):
         print(f"Error getting the status of the source: {e}")
         raise RuntimeError(f"Error getting the status of the source: {e}")
 
-def update_document_active(source_id: int, document_urls: list[str], db_connection: psycopg.Connection):
+def update_document_active(source_id: int, rfp_links: list[dict], db_connection: psycopg.Connection):
     """
     Update the active status of the documents
     """
     try:
+        document_urls = [rfp_link["url"] for rfp_link in rfp_links]
         with db_connection.cursor() as cursor:
             cursor.execute("UPDATE documents SET active = false WHERE source_id = %s AND document_url NOT IN (%s)", (source_id, document_urls))
             db_connection.commit()

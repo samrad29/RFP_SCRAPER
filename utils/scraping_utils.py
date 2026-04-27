@@ -40,6 +40,7 @@ def fetch_html(url: str, session: requests.Session | None = None) -> str:
                 verify=True,
             )
             resp.raise_for_status()
+            
             return {"success": True, "html": resp.text}
 
         # could try to scrape without verifying the SSL cert, but it is risky and should investigate more
@@ -75,6 +76,7 @@ def extract_rfp_links(html, base_url, session: requests.Session):
 
     candidates = []
 
+    # Find the links within an 'a' tag
     for a in soup.find_all("a", href=True):
         text = a.get_text(strip=True)
         href = a["href"]
@@ -86,6 +88,21 @@ def extract_rfp_links(html, base_url, session: requests.Session):
         if any(k in combined for k in RFP_KEYWORDS):
             candidates.append({
                 "title": text,
+                "url": url,
+                "base_url": base_url,
+                "href": href,
+                "type": classify_content_type(url, session)
+            })
+
+    # Find the links within an 'iframe' tag
+    for iframe in soup.find_all("iframe", src=True):
+        src = iframe["src"]
+        url = urljoin(base_url, src)
+        combined = f"{src} {url}".lower()
+
+        if any(k in combined for k in RFP_KEYWORDS):
+            candidates.append({
+                "title": src,
                 "url": url,
                 "type": classify_content_type(url, session)
             })
