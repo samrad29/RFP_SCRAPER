@@ -25,7 +25,8 @@ def has_document_changed(source_id: int, document_text: str, document_url: str, 
 
 def cache_document(rfp_link: dict, source_id: int, db_connection: psycopg.Connection):
     """
-    Cache the document
+    Cache the document (upsert by source_id + document_url).
+    Uses Tries to update the document, if it fails, it inserts the document.
     """
     try:
         current_hash = hash_text(rfp_link["text"])
@@ -34,16 +35,44 @@ def cache_document(rfp_link: dict, source_id: int, db_connection: psycopg.Connec
         document_base_url = rfp_link["base_url"]
         document_href = rfp_link["href"]
         with db_connection.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO documents (source_id, document_url, document_base_url, document_href, document_hash, document_type) 
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (source_id, document_url) DO UPDATE SET 
+            cursor.execute(
+                """
+                UPDATE documents SET
                     document_base_url = %s,
                     document_href = %s,
                     document_hash = %s,
                     document_type = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                """, (source_id, document_url, document_base_url, document_href, current_hash, document_type, document_base_url, document_href, current_hash, document_type))
+                    updated_at = CURRENT_TIMESTAMP,
+                    active = TRUE
+                WHERE source_id = %s AND document_url = %s
+                """,
+                (
+                    document_base_url,
+                    document_href,
+                    current_hash,
+                    document_type,
+                    source_id,
+                    document_url,
+                ),
+            )
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """
+                    INSERT INTO documents (
+                        source_id, document_url, document_base_url, document_href,
+                        document_hash, document_type
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        source_id,
+                        document_url,
+                        document_base_url,
+                        document_href,
+                        current_hash,
+                        document_type,
+                    ),
+                )
             db_connection.commit()
     except Exception as e:
         print(f"Error caching the document: {e}")
@@ -89,7 +118,10 @@ def cache_source(source_url: str, tribe_name: str, html: str, db_connection: psy
             else:
                 print(f"Source for {tribe_name} is new or has changed, caching it")
             if result: # source already exists, update the hash
-                cursor.execute("UPDATE sources SET hash = %s updated_at = CURRENT_TIMESTAMP WHERE source_id = %s", (current_hash, result[1]))
+                cursor.execute(
+                    "UPDATE sources SET hash = %s, updated_at = CURRENT_TIMESTAMP WHERE source_id = %s",
+                    (current_hash, result[1]),
+                )
                 db_connection.commit()
                 source_id = result[1]
             else: # source does not exist, create it
